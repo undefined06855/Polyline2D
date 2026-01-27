@@ -71,41 +71,42 @@ public:
 	 *                         Must contain elements of type Vec2.
 	 *                         Must expose size() and operator[] functions.
 	 */
-	template<typename Vec2, typename InputCollection>
-	static std::vector<Vec2> create(const InputCollection &points, float thickness,
-	                                JointStyle jointStyle = JointStyle::MITER,
-	                                EndCapStyle endCapStyle = EndCapStyle::BUTT,
-	                                bool allowOverlap = false) {
-		std::vector<Vec2> vertices;
-		create(vertices, points, thickness, jointStyle, endCapStyle, allowOverlap);
-		return vertices;
-	}
+	// template<typename Vec2, typename InputCollection>
+	// static std::vector<Vec2> create(const InputCollection &points, float thickness,
+	//                                 JointStyle jointStyle = JointStyle::MITER,
+	//                                 EndCapStyle endCapStyle = EndCapStyle::BUTT,
+	//                                 bool allowOverlap = false) {
+	// 	std::vector<Vec2> vertices;
+	// 	create(vertices, points, thickness, jointStyle, endCapStyle, allowOverlap);
+	// 	return vertices;
+	// }
 
 	template<typename Vec2>
-	static std::vector<Vec2> create(const std::vector<Vec2> &points, float thickness,
+	static std::pair<std::vector<Vec2>, std::vector<Vec2>> create(const std::vector<Vec2> &points, float thickness,
 	                                JointStyle jointStyle = JointStyle::MITER,
 	                                EndCapStyle endCapStyle = EndCapStyle::BUTT,
 	                                bool allowOverlap = false) {
 		std::vector<Vec2> vertices;
-		create<Vec2, std::vector<Vec2>>(vertices, points, thickness, jointStyle, endCapStyle, allowOverlap);
-		return vertices;
+		std::vector<Vec2> coords;
+		create<Vec2, std::vector<Vec2>>(vertices, coords, points, thickness, jointStyle, endCapStyle, allowOverlap);
+		return { vertices, coords };
 	}
 
-	template<typename Vec2, typename InputCollection>
-	static size_t create(std::vector<Vec2> &vertices, const InputCollection &points, float thickness,
-	                     JointStyle jointStyle = JointStyle::MITER,
-	                     EndCapStyle endCapStyle = EndCapStyle::BUTT,
-	                     bool allowOverlap = false) {
-		auto numVerticesBefore = vertices.size();
+	// template<typename Vec2, typename InputCollection>
+	// static size_t create(std::vector<Vec2> &vertices, const InputCollection &points, float thickness,
+	//                      JointStyle jointStyle = JointStyle::MITER,
+	//                      EndCapStyle endCapStyle = EndCapStyle::BUTT,
+	//                      bool allowOverlap = false) {
+	// 	auto numVerticesBefore = vertices.size();
 
-		create<Vec2, InputCollection>(std::back_inserter(vertices), points, thickness,
-		                              jointStyle, endCapStyle, allowOverlap);
+	// 	create<Vec2, InputCollection>(std::back_inserter(vertices), points, thickness,
+	// 	                              jointStyle, endCapStyle, allowOverlap);
 
-		return vertices.size() - numVerticesBefore;
-	}
+	// 	return vertices.size() - numVerticesBefore;
+	// }
 
 	template<typename Vec2, typename InputCollection, typename OutputIterator>
-	static OutputIterator create(OutputIterator vertices, const InputCollection &points, float thickness,
+	static std::pair<OutputIterator, OutputIterator> create(OutputIterator vertices, OutputIterator coords, const InputCollection &points, float thickness,
 	                             JointStyle jointStyle = JointStyle::MITER,
 	                             EndCapStyle endCapStyle = EndCapStyle::BUTT,
 	                             bool allowOverlap = false) {
@@ -140,7 +141,7 @@ public:
 
 		if (segments.empty()) {
 			// handle the case of insufficient input points
-			return vertices;
+			return { vertices, coords };
 		}
 
 		Vec2 nextStart1{0, 0};
@@ -169,14 +170,14 @@ public:
 
 		} else if (endCapStyle == EndCapStyle::ROUND) {
 			// draw half circle end caps
-			createTriangleFan(vertices, firstSegment.center.a, firstSegment.center.a,
+			createTriangleFan(vertices, coords, firstSegment.center.a, firstSegment.center.a,
 			                  firstSegment.edge1.a, firstSegment.edge2.a, false);
-			createTriangleFan(vertices, lastSegment.center.b, lastSegment.center.b,
+			createTriangleFan(vertices, coords, lastSegment.center.b, lastSegment.center.b,
 			                  lastSegment.edge1.b, lastSegment.edge2.b, true);
 
 		} else if (endCapStyle == EndCapStyle::JOINT) {
 			// join the last (connecting) segment and the first segment
-			createJoint(vertices, lastSegment, firstSegment, jointStyle,
+			createJoint(vertices, coords, lastSegment, firstSegment, jointStyle,
 			            pathEnd1, pathEnd2, pathStart1, pathStart2, allowOverlap);
 		}
 
@@ -197,7 +198,7 @@ public:
 				end2 = pathEnd2;
 
 			} else {
-				createJoint(vertices, segment, segments[i + 1], jointStyle,
+				createJoint(vertices, coords, segment, segments[i + 1], jointStyle,
 				            end1, end2, nextStart1, nextStart2, allowOverlap);
 			}
 
@@ -210,11 +211,19 @@ public:
 			*vertices++ = start2;
 			*vertices++ = end2;
 
+			*coords++ = { 0, 1 };
+			*coords++ = { 0, 0 };
+			*coords++ = { 1, 1 };
+
+			*coords++ = { 1, 1 };
+			*coords++ = { 0, 0 };
+			*coords++ = { 1, 0 };
+
 			start1 = nextStart1;
 			start2 = nextStart2;
 		}
 
-		return vertices;
+		return { vertices, coords };
 	}
 
 private:
@@ -248,7 +257,7 @@ private:
 	};
 
 	template<typename Vec2, typename OutputIterator>
-	static OutputIterator createJoint(OutputIterator vertices,
+	static std::pair<OutputIterator, OutputIterator> createJoint(OutputIterator vertices, OutputIterator coords,
 	                                  const PolySegment<Vec2> &segment1, const PolySegment<Vec2> &segment2,
 	                                  JointStyle jointStyle, Vec2 &end1, Vec2 &end2,
 	                                  Vec2 &nextStart1, Vec2 &nextStart2,
@@ -357,17 +366,20 @@ private:
 				*vertices++ = outer2->a;
 				*vertices++ = innerSec;
 
+				*coords++ = { 0, 1 };
+				*coords++ = { 1, 1 };
+				*coords++ = { 0.5, 0 };
 			} else if (jointStyle == JointStyle::ROUND) {
 				// draw a circle between the ends of the outer edges,
 				// centered at the actual point
 				// with half the line thickness as the radius
-				createTriangleFan(vertices, innerSec, segment1.center.b, outer1->b, outer2->a, clockwise);
+				createTriangleFan(vertices, coords, innerSec, segment1.center.b, outer1->b, outer2->a, clockwise);
 			} else {
 				assert(false);
 			}
 		}
 
-		return vertices;
+		return { vertices, coords };
 	}
 
 	/**
@@ -381,7 +393,7 @@ private:
 	 * @param clockwise Whether the circle's rotation is clockwise.
 	 */
 	template<typename Vec2, typename OutputIterator>
-	static OutputIterator createTriangleFan(OutputIterator vertices, Vec2 connectTo, Vec2 origin,
+	static std::pair<OutputIterator, OutputIterator> createTriangleFan(OutputIterator vertices, OutputIterator coords, Vec2 connectTo, Vec2 origin,
 	                                        Vec2 start, Vec2 end, bool clockwise) {
 
 		auto point1 = Vec2Maths::subtract(start, origin);
@@ -433,10 +445,14 @@ private:
 			*vertices++ = endPoint;
 			*vertices++ = connectTo;
 
+			*coords++ = { 0, 1 };
+			*coords++ = { 1, 1 };
+			*coords++ = { 0.5, 0 };
+
 			startPoint = endPoint;
 		}
 
-		return vertices;
+		return { vertices, coords };
 	}
 };
 
