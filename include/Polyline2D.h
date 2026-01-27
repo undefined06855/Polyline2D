@@ -71,15 +71,16 @@ public:
 	 *                         Must contain elements of type Vec2.
 	 *                         Must expose size() and operator[] functions.
 	 */
-	// template<typename Vec2, typename InputCollection>
-	// static std::vector<Vec2> create(const InputCollection &points, float thickness,
-	//                                 JointStyle jointStyle = JointStyle::MITER,
-	//                                 EndCapStyle endCapStyle = EndCapStyle::BUTT,
-	//                                 bool allowOverlap = false) {
-	// 	std::vector<Vec2> vertices;
-	// 	create(vertices, points, thickness, jointStyle, endCapStyle, allowOverlap);
-	// 	return vertices;
-	// }
+	template<typename Vec2, typename InputCollection>
+	static std::pair<std::vector<Vec2>, std::vector<Vec2>> create(const InputCollection &points, float thickness,
+	                                JointStyle jointStyle = JointStyle::MITER,
+	                                EndCapStyle endCapStyle = EndCapStyle::BUTT,
+	                                bool allowOverlap = false) {
+		std::vector<Vec2> vertices;
+		std::vector<Vec2> coords;
+		create(vertices, coords, points, thickness, jointStyle, endCapStyle, allowOverlap);
+		return { vertices, coords };
+	}
 
 	template<typename Vec2>
 	static std::pair<std::vector<Vec2>, std::vector<Vec2>> create(const std::vector<Vec2> &points, float thickness,
@@ -92,18 +93,18 @@ public:
 		return { vertices, coords };
 	}
 
-	// template<typename Vec2, typename InputCollection>
-	// static size_t create(std::vector<Vec2> &vertices, const InputCollection &points, float thickness,
-	//                      JointStyle jointStyle = JointStyle::MITER,
-	//                      EndCapStyle endCapStyle = EndCapStyle::BUTT,
-	//                      bool allowOverlap = false) {
-	// 	auto numVerticesBefore = vertices.size();
+	template<typename Vec2, typename InputCollection>
+	static size_t create(std::vector<Vec2> &vertices, std::vector<Vec2> &coords, const InputCollection &points, float thickness,
+	                     JointStyle jointStyle = JointStyle::MITER,
+	                     EndCapStyle endCapStyle = EndCapStyle::BUTT,
+	                     bool allowOverlap = false) {
+		auto numVerticesBefore = vertices.size();
 
-	// 	create<Vec2, InputCollection>(std::back_inserter(vertices), points, thickness,
-	// 	                              jointStyle, endCapStyle, allowOverlap);
+		create<Vec2, InputCollection>(std::back_inserter(vertices), std::back_inserter(coords), points, thickness,
+		                              jointStyle, endCapStyle, allowOverlap);
 
-	// 	return vertices.size() - numVerticesBefore;
-	// }
+		return vertices.size() - numVerticesBefore;
+	}
 
 	template<typename Vec2, typename InputCollection, typename OutputIterator>
 	static std::pair<OutputIterator, OutputIterator> create(OutputIterator vertices, OutputIterator coords, const InputCollection &points, float thickness,
