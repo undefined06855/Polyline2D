@@ -16,7 +16,7 @@ struct Vec2 {
 	Vec2(float x, float y) :
 			x(x), y(y) {}
 
-	virtual ~Vec2() = default;
+	~Vec2() = default;
 
 	float x, y;
 };
