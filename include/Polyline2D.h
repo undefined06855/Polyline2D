@@ -51,6 +51,24 @@ public:
 		JOINT
 	};
 
+	enum class TriangleFanType {
+		/**
+		 * A triangle fan in the middle of the line.
+		 * No special handling needed.
+		 */
+		JOINT,
+		/**
+		 * A triangle fan at the start of the line.
+		 * This should have texture coords from 0.25 to 0.5.
+		 */
+		START,
+		/**
+		 * A triangle fan at the end of the line.
+		 * This should have texture coords from 0.5 to 0.75.
+		 */
+		END
+	};
+
 	/**
 	 * Creates a vector of vertices describing a solid path through the input points.
 	 * @param points The points of the path.
@@ -62,7 +80,7 @@ public:
 	 * 					   whose points have a distance smaller than the thickness,
 	 * 					   but may introduce overlapping vertices,
 	 * 					   which is undesirable when rendering transparent paths.
-	 * @return The vertices describing the path.
+	 * @return The vertices describing the path, and the texture coordinates of the vertices.
 	 * @tparam Vec2 The vector type to use for the vertices.
 	 *              Must have public non-const float fields "x" and "y".
 	 *              Must have a two-args constructor taking x and y values.
@@ -172,9 +190,9 @@ public:
 		} else if (endCapStyle == EndCapStyle::ROUND) {
 			// draw half circle end caps
 			createTriangleFan(vertices, coords, firstSegment.center.a, firstSegment.center.a,
-			                  firstSegment.edge1.a, firstSegment.edge2.a, false);
+			                  firstSegment.edge1.a, firstSegment.edge2.a, false, TriangleFanType::START);
 			createTriangleFan(vertices, coords, lastSegment.center.b, lastSegment.center.b,
-			                  lastSegment.edge1.b, lastSegment.edge2.b, true);
+			                  lastSegment.edge1.b, lastSegment.edge2.b, true, TriangleFanType::END);
 
 		} else if (endCapStyle == EndCapStyle::JOINT) {
 			// join the last (connecting) segment and the first segment
@@ -214,11 +232,11 @@ public:
 
 			*coords++ = { 0, 1 };
 			*coords++ = { 0, 0 };
-			*coords++ = { 1, 1 };
+			*coords++ = { 0.25, 1 };
 
-			*coords++ = { 1, 1 };
+			*coords++ = { 0.25, 1 };
 			*coords++ = { 0, 0 };
-			*coords++ = { 1, 0 };
+			*coords++ = { 0.25, 0 };
 
 			start1 = nextStart1;
 			start2 = nextStart2;
@@ -368,13 +386,13 @@ private:
 				*vertices++ = innerSec;
 
 				*coords++ = { 0, 1 };
-				*coords++ = { 1, 1 };
-				*coords++ = { 0.5, 0 };
+				*coords++ = { 0.25, 1 };
+				*coords++ = { 0.125, 0 };
 			} else if (jointStyle == JointStyle::ROUND) {
 				// draw a circle between the ends of the outer edges,
 				// centered at the actual point
 				// with half the line thickness as the radius
-				createTriangleFan(vertices, coords, innerSec, segment1.center.b, outer1->b, outer2->a, clockwise);
+				createTriangleFan(vertices, coords, innerSec, segment1.center.b, outer1->b, outer2->a, clockwise, TriangleFanType::JOINT);
 			} else {
 				assert(false);
 			}
@@ -392,10 +410,11 @@ private:
 	 * @param start The circle's starting point.
 	 * @param end The circle's ending point.
 	 * @param clockwise Whether the circle's rotation is clockwise.
+	 * @param type The type of this triangle fan.
 	 */
 	template<typename Vec2, typename OutputIterator>
 	static std::pair<OutputIterator, OutputIterator> createTriangleFan(OutputIterator vertices, OutputIterator coords, Vec2 connectTo, Vec2 origin,
-	                                        Vec2 start, Vec2 end, bool clockwise) {
+	                                        Vec2 start, Vec2 end, bool clockwise, TriangleFanType type) {
 
 		auto point1 = Vec2Maths::subtract(start, origin);
 		auto point2 = Vec2Maths::subtract(end, origin);
@@ -446,9 +465,21 @@ private:
 			*vertices++ = endPoint;
 			*vertices++ = connectTo;
 
-			*coords++ = { 0, 1 };
-			*coords++ = { 1, 1 };
-			*coords++ = { 0.5, 0 };
+			if (type == TriangleFanType::JOINT) {
+				*coords++ = { 0, 1 };
+				*coords++ = { 0.25, 1 };
+				*coords++ = { 0.125, 0 };
+			} else if (type == TriangleFanType::START) {
+				*coords++ = { 0.25, 1 };
+				*coords++ = { 0.5, 1 };
+				*coords++ = { 0.375, 0 };
+			} else if (type == TriangleFanType::END) {
+				*coords++ = { 0.5, 1 };
+				*coords++ = { 0.75, 1 };
+				*coords++ = { 0.675, 0 };
+			} else {
+				assert(false);
+			}
 
 			startPoint = endPoint;
 		}
