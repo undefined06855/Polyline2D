@@ -230,13 +230,13 @@ public:
 			*vertices++ = start2;
 			*vertices++ = end2;
 
+			*coords++ = { 0, 0 };
 			*coords++ = { 0, 1 };
-			*coords++ = { 0, 0 };
-			*coords++ = { 0.25, 1 };
-
-			*coords++ = { 0.25, 1 };
-			*coords++ = { 0, 0 };
 			*coords++ = { 0.25, 0 };
+
+			*coords++ = { 0.25, 0 };
+			*coords++ = { 0, 1 };
+			*coords++ = { 0.25, 1 };
 
 			start1 = nextStart1;
 			start2 = nextStart2;
@@ -385,9 +385,9 @@ private:
 				*vertices++ = outer2->a;
 				*vertices++ = innerSec;
 
-				*coords++ = { 0, 1 };
-				*coords++ = { 0.25, 1 };
-				*coords++ = { 0.125, 0 };
+				*coords++ = { 0, 0 };
+				*coords++ = { 0.25, 0 };
+				*coords++ = { 0.125, 1 };
 			} else if (jointStyle == JointStyle::ROUND) {
 				// draw a circle between the ends of the outer edges,
 				// centered at the actual point
@@ -466,17 +466,17 @@ private:
 			*vertices++ = connectTo;
 
 			if (type == TriangleFanType::JOINT) {
-				*coords++ = { 0, 1 };
-				*coords++ = { 0.25, 1 };
-				*coords++ = { 0.125, 0 };
+				*coords++ = { 0, 0 };
+				*coords++ = { 0.25, 0 };
+				*coords++ = { 0.125, 1 };
 			} else if (type == TriangleFanType::START) {
-				*coords++ = { 0.25, 1 };
-				*coords++ = { 0.5, 1 };
-				*coords++ = { 0.375, 0 };
+				*coords++ = { 0.25, 0 };
+				*coords++ = { 0.5, 0 };
+				*coords++ = { 0.375, 1 };
 			} else if (type == TriangleFanType::END) {
-				*coords++ = { 0.5, 1 };
-				*coords++ = { 0.75, 1 };
-				*coords++ = { 0.675, 0 };
+				*coords++ = { 0.5, 0 };
+				*coords++ = { 0.75, 0 };
+				*coords++ = { 0.675, 1 };
 			} else {
 				assert(false);
 			}
